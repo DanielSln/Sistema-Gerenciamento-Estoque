@@ -527,9 +527,8 @@ def exportar_relatorio():
 
 
 def sair():
-    conexao = sqlite3.connect("SistemaEstoque.db")
     janela.destroy()
-    conexao.close()
+    criar_bd.close()
 
 
 if not os.path.exists("SistemaEstoque.db"):
