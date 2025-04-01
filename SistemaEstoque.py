@@ -338,7 +338,7 @@ def checkbox_event_saida(nomes, var_checkbox): #Mesma coisa da edição, só que
             checkbox_anterior.set(0)
         preencher_campos_saida(nomes)
         item_selecionado = nomes
-        checkbox_anterior = var_checkbox
+        checkbox_anterior = var_checkbox #seila
              
     else:
         if checkbox_anterior == var_checkbox:
