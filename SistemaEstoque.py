@@ -331,7 +331,7 @@ def preencher_campos_saida(nomes):
         quantidade_estoque_saida.configure(state="readonly")  
 
 
-def checkbox_event_saida(nomes, var_checkbox):
+def checkbox_event_saida(nomes, var_checkbox): #Mesma coisa da edição, só que pra saída
     global checkbox_anterior, item_selecionado
     if var_checkbox.get() == True:
         if checkbox_anterior is not None and checkbox_anterior != var_checkbox:
