@@ -235,12 +235,24 @@ def dados_entrada():
         itens.append(nomes)
 
         for i in itens:
+            var_checkbox_entrada = customtkinter.BooleanVar(value=False)
             txt_entrada.configure(text=itens)
-            box_entrada = customtkinter.CTkCheckBox(scrollable_entrada, text=itens, border_color="white", command=lambda n=nomes: preencher_campos_entrada(n))
+            box_entrada = customtkinter.CTkCheckBox(scrollable_entrada, text=itens, border_color="white", variable=var_checkbox_entrada, command=lambda n=nomes, v=var_checkbox_entrada: checkbox_event_entrada(n, v))
             box_entrada.pack(pady=10, padx=10, fill="x")
 
     conexao.close()
     
+
+def limpar_campos_entrada():
+    entry_produto_entrada.configure(state='normal')
+    entry_produto_entrada.delete(0, 'end')
+
+    quantidade_estoque_entrada.configure(state='normal')
+    quantidade_estoque_entrada.delete(0, 'end')
+    
+    quantidade_entrada.configure(state='normal')
+    quantidade_entrada.delete(0, 'end')
+
 
 def preencher_campos_entrada(nomes):
     conexao = sqlite3.connect("SistemaEstoque.db")
@@ -253,33 +265,31 @@ def preencher_campos_entrada(nomes):
 
     if dados_produto:
         nome, quantidade = dados_produto
-        
-        # Se a quantidade for None, atribuímos uma string vazia
-        quantidade = quantidade if quantidade is not None else ""
 
         entry_produto_entrada.delete(0, "end")
         entry_produto_entrada.insert(0, nome)
-        entry_produto_entrada.configure(state="readonly")  
+        entry_produto_entrada.configure(state="disabled")  
 
         quantidade_estoque_entrada.delete(0, "end")
         quantidade_estoque_entrada.insert(0, quantidade)
-        quantidade_estoque_entrada.configure(state="readonly")  
+        quantidade_estoque_entrada.configure(state="disabled")  
 
 
-def checkbox_event_entrada(nomes, var_checkbox):
-    global checkbox_anterior, item_selecionado
-    if var_checkbox.get() == True:
-        if checkbox_anterior is not None and checkbox_anterior != var_checkbox:
-            checkbox_anterior.set(0)
-        preencher_campos_entrada(nomes)
-        item_selecionado = nomes
-        checkbox_anterior = var_checkbox
-             
-    else:
-        if checkbox_anterior == var_checkbox:
-            limpar_campos_edicao()
-            item_selecionado = None
-            checkbox_anterior = None
+def checkbox_event_entrada(nomes, var_checkbox_entrada):
+    global checkbox_anterior_entrada
+    
+    if var_checkbox_entrada.get() == 1:  # Se o checkbox foi marcado
+        limpar_campos_entrada()
+        if checkbox_anterior_entrada is not None and checkbox_anterior_entrada != var_checkbox_entrada: # Verifica se existe um checkbox previamente marcado e se o novo checkbox clicado é diferente do anterior.
+            checkbox_anterior_entrada.set(0)  # Desmarca o checkbox anterior
+            limpar_campos_entrada()
+        checkbox_anterior_entrada = var_checkbox_entrada  # Atualiza a referência
+        preencher_campos_entrada(nomes)  # Carrega os dados do produto
+    else:  # Se o checkbox foi desmarcado
+        limpar_campos_entrada()
+        checkbox_anterior_entrada = None  # Remove a referência ao checkbox anterior
+
+
 
 
 
@@ -300,11 +310,21 @@ def dados_saida():
         itens.append(nomes)
 
         for i in itens:
+            var_checkbox_saida = customtkinter.BooleanVar(value=False)
             txt_saida.configure(text=itens)
-            box_saida = customtkinter.CTkCheckBox(scrollable_saida, text=itens, border_color="white", command=lambda n=nomes: preencher_campos_saida(n))
+            box_saida = customtkinter.CTkCheckBox(scrollable_saida, text=itens, border_color="white", variable=var_checkbox_saida, command=lambda n=nomes, v=var_checkbox_saida: checkbox_event_saida(n, v))
             box_saida.pack(pady=10, padx=10, fill="x")
 
     conexao.close()
+
+
+def limpar_campos_saida():
+    entry_produto_saida.configure(state='normal')
+    entry_produto_saida.delete(0, 'end')
+    quantidade_estoque_saida.configure(state='normal')
+    quantidade_estoque_saida.delete(0, 'end')
+    quantidade_retirada.configure(state='normal')
+    quantidade_retirada.delete(0, 'end')
 
 
 def preencher_campos_saida(nomes):
@@ -317,51 +337,34 @@ def preencher_campos_saida(nomes):
     conexao.close()
 
     if dados_produto:
-        nome, quantidade = dados_produto  
-        
-        # Se a quantidade for None, atribuímos uma string vazia
-        quantidade = quantidade if quantidade is not None else ""
+        nome, quantidade = dados_produto
 
         entry_produto_saida.delete(0, "end")
         entry_produto_saida.insert(0, nome)
-        entry_produto_saida.configure(state="readonly")  
+        entry_produto_saida.configure(state="disabled")  
 
         quantidade_estoque_saida.delete(0, "end")
         quantidade_estoque_saida.insert(0, quantidade)
-        quantidade_estoque_saida.configure(state="readonly")  
+        quantidade_estoque_saida.configure(state="disabled")  
+        
 
-
-def checkbox_event_saida(nomes, var_checkbox): #Mesma coisa da edição, só que pra saída
-    global checkbox_anterior, item_selecionado
-    if var_checkbox.get() == True:
-        if checkbox_anterior is not None and checkbox_anterior != var_checkbox:
-            checkbox_anterior.set(0)
-        preencher_campos_saida(nomes)
-        item_selecionado = nomes
-        checkbox_anterior = var_checkbox #seila
-             
-    else:
-        if checkbox_anterior == var_checkbox:
-            limpar_campos_edicao()
-            item_selecionado = None
-            checkbox_anterior = None
+def checkbox_event_saida(nomes, var_checkbox_saida):
+    global checkbox_anterior_saida
+    
+    if var_checkbox_saida.get() == 1:  # Se o checkbox foi marcado
+        limpar_campos_saida()
+        if checkbox_anterior_saida is not None and checkbox_anterior_saida != var_checkbox_saida: # Verifica se existe um checkbox previamente marcado e se o novo checkbox clicado é diferente do anterior.
+            checkbox_anterior_saida.set(0)  # Desmarca o checkbox anterior
+            limpar_campos_saida()
+        checkbox_anterior_saida = var_checkbox_saida  # Atualiza a referência
+        preencher_campos_saida(nomes)  # Carrega os dados do produto
+    else:  # Se o checkbox foi desmarcado
+        limpar_campos_saida()
+        checkbox_anterior_saida = None  # Remove a referência ao checkbox anterior
 
 
 def cancelar_saida():
-    entry_produto_saida.configure(state="normal")  
-    entry_produto_saida.delete(0, "end")
-    entry_produto_saida.configure(state="readonly")  
-
-    quantidade_estoque_saida.configure(state="normal")  
-    quantidade_estoque_saida.delete(0, "end")
-    quantidade_estoque_saida.configure(state="readonly")  
-
-    quantidade_retirada.delete(0, "end")  
-
-    dados_saida()
-    messagebox.showinfo("Mensagem Sistema", "Saída de produto cancelada!")
-    
-
+    pass
 
 
 #============================================================== Frames / Telas ===============================================================#
@@ -539,6 +542,9 @@ janela.title("")
 janela.geometry('820x420')
 
 checkbox_anterior = customtkinter.BooleanVar()
+checkbox_anterior_saida = customtkinter.BooleanVar()
+checkbox_anterior_entrada = customtkinter.BooleanVar()
+
 
 # Trocar a cor da tabela
 style = ttk.Style(master=janela)
