@@ -219,7 +219,7 @@ def cancelar_edicao(): ##Cancela edição do produto
 
 
 #============================================================== Def's de entrada ===============================================================#
-def dados_entrada():
+def dados_entrada(): #Recebe os nomes dos produtos 
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
     cursor.execute("SELECT * FROM produtos")
@@ -243,7 +243,7 @@ def dados_entrada():
     conexao.close()
     
 
-def limpar_campos_entrada():
+def limpar_campos_entrada(): #Limpa os entrys da tela de entrada
     entry_produto_entrada.configure(state='normal')
     entry_produto_entrada.delete(0, 'end')
 
@@ -254,7 +254,7 @@ def limpar_campos_entrada():
     quantidade_entrada.delete(0, 'end')
 
 
-def preencher_campos_entrada(nomes):
+def preencher_campos_entrada(nomes): #Vai preencher os campos de entry de acordo com o produto selecionado
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
     
@@ -294,7 +294,7 @@ def checkbox_event_entrada(nomes, var_checkbox_entrada):
 
 
 #============================================================== Def's de Saída ===============================================================#
-def dados_saida():
+def dados_saida(): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
     cursor.execute("SELECT * FROM produtos")
