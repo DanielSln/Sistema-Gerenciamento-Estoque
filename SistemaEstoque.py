@@ -294,7 +294,7 @@ def checkbox_event_entrada(nomes, var_checkbox_entrada):
 
 
 #============================================================== Def's de Saída ===============================================================#
-def dados_saida():
+def dados_saida(): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
     cursor.execute("SELECT * FROM produtos")
