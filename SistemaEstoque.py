@@ -452,7 +452,7 @@ def relatorio():
 
     #Botões para alternar os relatórios
     botao_estoque.configure(state='disabled')
-    botao_entrada.configure(state='normal')
+    botao_relatorio_entrada.configure(state='normal')
     botao_saida_relatorio.configure(state='normal')
 
 
@@ -463,8 +463,8 @@ def saida_relatorio():
     columns_saida.grid(row=2, column=0, columnspan=5)
     columns_saida.grid_propagate(False)
     botao_estoque.configure(state='normal')
+    botao_relatorio_entrada.configure(state='normal')
     botao_saida_relatorio.configure(state='disabled')
-    botao_entrada.configure(state='normal')
 
 
 def entrada_relatorio():
@@ -474,8 +474,8 @@ def entrada_relatorio():
     columns_entrada.grid(row=2, column=0, columnspan=5)
     columns_entrada.grid_propagate(False)
     botao_estoque.configure(state='normal')
+    botao_relatorio_entrada.configure(state='disabled')
     botao_saida_relatorio.configure(state='normal')
-    botao_entrada.configure(state='disabled')
 
 
 def exportar_relatorio():
@@ -835,8 +835,8 @@ frame_botoes.grid(row=5, column=0, columnspan=3, pady=10, sticky="n")
 botao_estoque = customtkinter.CTkButton(frame_botoes, text="Estoque", width=80, command=relatorio)
 botao_estoque.grid(row=0, column=0, padx=2)
 
-botao_entrada = customtkinter.CTkButton(frame_botoes, text="Entrada", width=80, command=entrada_relatorio)
-botao_entrada.grid(row=0, column=1, padx=2)
+botao_relatorio_entrada = customtkinter.CTkButton(frame_botoes, text="Entrada", width=80, command=entrada_relatorio)
+botao_relatorio_entrada.grid(row=0, column=1, padx=2)
 
 botao_saida_relatorio = customtkinter.CTkButton(frame_botoes, text="Saída", width=80, command=saida_relatorio)
 botao_saida_relatorio.grid(row=0, column=2, padx=2)
