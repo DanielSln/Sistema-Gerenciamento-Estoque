@@ -419,8 +419,6 @@ def tela_entrada():
     frame_relatorio.grid_forget()
     frame_entrada.grid(row=0, column=1, padx=10, pady=10)
     frame_entrada.grid_propagate(False)
-
-    # Ux/Ui
     botao_cadastrar.configure(state='normal')
     botao_editar.configure(state='normal')
     botao_saida.configure(state='normal')
