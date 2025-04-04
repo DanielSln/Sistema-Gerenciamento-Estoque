@@ -7,9 +7,9 @@ import sqlite3
 
 
 file_path = os.path.dirname(os.path.realpath(__file__)) 
-image = Image.open(file_path + "/lixeira.png")
-image = image.resize((25,25))
-image1 = customtkinter.CTkImage(image)
+image_lixeira = Image.open(file_path + "/lixeira.png")
+image_lixeira = image_lixeira.resize((25,25))
+image1 = customtkinter.CTkImage(image_lixeira)
 
 
 item_selecionado = None
@@ -218,6 +218,127 @@ def cancelar_edicao(): ##Cancela edição do produto
     ler_dados()
 
 
+
+
+
+
+
+
+#============================================================== Def's de Saída ===============================================================#
+
+def dados_saida(): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    cursor.execute("SELECT * FROM produtos")
+
+    recebe_dados = cursor.fetchall()
+
+    for widget in scrollable_saida.winfo_children():
+        widget.destroy()
+
+    for i in recebe_dados:
+        nomes = str(i[1])
+        itens = []
+        itens.append(nomes)
+
+        for i in itens:
+            var_checkbox_saida = customtkinter.BooleanVar(value=False)
+            txt_saida.configure(text=itens)
+            box_saida = customtkinter.CTkCheckBox(scrollable_saida, text=itens, border_color="white", variable=var_checkbox_saida, command=lambda n=nomes, v=var_checkbox_saida: checkbox_event_saida(n, v))
+            box_saida.pack(pady=10, padx=10, fill="x")
+
+    conexao.close()
+
+
+def limpar_campos_saida():
+    entry_produto_saida.configure(state='normal')
+    entry_produto_saida.delete(0, 'end')
+    quantidade_estoque_saida.configure(state='normal')
+    quantidade_estoque_saida.delete(0, 'end')
+    quantidade_retirada.configure(state='normal')
+    quantidade_retirada.delete(0, 'end')
+
+
+def preencher_campos_saida(nomes):
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    
+    cursor.execute(f"SELECT nomeP, quantidadeP FROM produtos WHERE nomeP = '{nomes}'")
+    dados_produto = cursor.fetchone()  # Pegando apenas um registro
+    
+    conexao.close()
+
+    if dados_produto:
+        nome, quantidade = dados_produto
+
+        entry_produto_saida.delete(0, "end")
+        entry_produto_saida.insert(0, nome)
+        entry_produto_saida.configure(state="disabled")  
+
+        quantidade_estoque_saida.delete(0, "end")
+        quantidade_estoque_saida.insert(0, quantidade)
+        quantidade_estoque_saida.configure(state="disabled")  
+        
+
+def checkbox_event_saida(nomes, var_checkbox_saida):
+    global checkbox_anterior_saida
+    
+    if var_checkbox_saida.get() == 1:  # Se o checkbox foi marcado
+        limpar_campos_saida()
+        if checkbox_anterior_saida is not None and checkbox_anterior_saida != var_checkbox_saida: # Verifica se existe um checkbox previamente marcado e se o novo checkbox clicado é diferente do anterior.
+            checkbox_anterior_saida.set(0)  # Desmarca o checkbox anterior
+            limpar_campos_saida()
+        checkbox_anterior_saida = var_checkbox_saida  # Atualiza a referência
+        preencher_campos_saida(nomes)  # Carrega os dados do produto
+    else:  # Se o checkbox foi desmarcado
+        limpar_campos_saida()
+        checkbox_anterior_saida = None  # Remove a referência ao checkbox anterior
+
+
+def apagar_lixeira(label_item, botao_lixeira): #Apagar o item da tabela de saida
+    global linha
+    label_item.grid_forget()
+    botao_lixeira.grid_forget()
+    linha -= 1
+    
+
+itens_saida = []
+linha = 0
+
+def adicionar_saida(): #adicionar item na tabela la
+    global linha, itens_saida
+    nome_produto = entry_produto_saida.get().strip()
+    label_item = customtkinter.CTkLabel(scrollable_saida2, text=f"{nome_produto}")
+    label_item.grid(row=linha, column=0, padx=5, pady=5, sticky="w")
+    botao_lixeira = customtkinter.CTkButton(scrollable_saida2, image=image1, text="", width=40, command=lambda: apagar_lixeira(label_item, botao_lixeira), fg_color="red")
+    botao_lixeira.grid(row=linha, padx=130, column=1, sticky="e")
+    linha += 1
+
+    if nome_produto in itens_saida:
+        messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
+        label_item.grid_forget()
+        botao_lixeira.grid_forget()
+            
+    else:
+        itens_saida.append(nome_produto)
+        
+
+
+def cancelar_saida():
+    if messagebox.askyesno("Mensagem Sistema", "Deseja cancelar a saída do produto?"):
+        entry_produto_saida.delete(0, "end")
+        quantidade_estoque_saida.delete(0, "end")
+        quantidade_retirada.delete(0, "end")
+        messagebox.showinfo("Mensagem Sistema", "Saída de produto cancelada pelo usuário.")
+        scrollable_saida2.destroy()
+
+
+def salvar_saida():
+    pass
+
+
+
+
 #============================================================== Def's de entrada ===============================================================#
 def dados_entrada(): #Recebe os nomes dos produtos 
     conexao = sqlite3.connect("SistemaEstoque.db")
@@ -292,79 +413,6 @@ def checkbox_event_entrada(nomes, var_checkbox_entrada):
 
 
 
-
-#============================================================== Def's de Saída ===============================================================#
-def dados_saida(): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
-    conexao = sqlite3.connect("SistemaEstoque.db")
-    cursor = conexao.cursor()
-    cursor.execute("SELECT * FROM produtos")
-
-    recebe_dados = cursor.fetchall()
-
-    for widget in scrollable_saida.winfo_children():
-        widget.destroy()
-
-    for i in recebe_dados:
-        nomes = str(i[1])
-        itens = []
-        itens.append(nomes)
-
-        for i in itens:
-            var_checkbox_saida = customtkinter.BooleanVar(value=False)
-            txt_saida.configure(text=itens)
-            box_saida = customtkinter.CTkCheckBox(scrollable_saida, text=itens, border_color="white", variable=var_checkbox_saida, command=lambda n=nomes, v=var_checkbox_saida: checkbox_event_saida(n, v))
-            box_saida.pack(pady=10, padx=10, fill="x")
-
-    conexao.close()
-
-
-def limpar_campos_saida():
-    entry_produto_saida.configure(state='normal')
-    entry_produto_saida.delete(0, 'end')
-    quantidade_estoque_saida.configure(state='normal')
-    quantidade_estoque_saida.delete(0, 'end')
-    quantidade_retirada.configure(state='normal')
-    quantidade_retirada.delete(0, 'end')
-
-
-def preencher_campos_saida(nomes):
-    conexao = sqlite3.connect("SistemaEstoque.db")
-    cursor = conexao.cursor()
-    
-    cursor.execute(f"SELECT nomeP, quantidadeP FROM produtos WHERE nomeP = '{nomes}'")
-    dados_produto = cursor.fetchone()  # Pegando apenas um registro
-    
-    conexao.close()
-
-    if dados_produto:
-        nome, quantidade = dados_produto
-
-        entry_produto_saida.delete(0, "end")
-        entry_produto_saida.insert(0, nome)
-        entry_produto_saida.configure(state="disabled")  
-
-        quantidade_estoque_saida.delete(0, "end")
-        quantidade_estoque_saida.insert(0, quantidade)
-        quantidade_estoque_saida.configure(state="disabled")  
-        
-
-def checkbox_event_saida(nomes, var_checkbox_saida):
-    global checkbox_anterior_saida
-    
-    if var_checkbox_saida.get() == 1:  # Se o checkbox foi marcado
-        limpar_campos_saida()
-        if checkbox_anterior_saida is not None and checkbox_anterior_saida != var_checkbox_saida: # Verifica se existe um checkbox previamente marcado e se o novo checkbox clicado é diferente do anterior.
-            checkbox_anterior_saida.set(0)  # Desmarca o checkbox anterior
-            limpar_campos_saida()
-        checkbox_anterior_saida = var_checkbox_saida  # Atualiza a referência
-        preencher_campos_saida(nomes)  # Carrega os dados do produto
-    else:  # Se o checkbox foi desmarcado
-        limpar_campos_saida()
-        checkbox_anterior_saida = None  # Remove a referência ao checkbox anterior
-
-
-def cancelar_saida():
-    pass
 
 
 #============================================================== Frames / Telas ===============================================================#
@@ -712,13 +760,16 @@ quantidade_estoque_saida.grid(row=1, column=2, sticky="w", padx=5)
 quantidade_retirada = customtkinter.CTkEntry(frame_saida, placeholder_text="Quantidade:", width=90)
 quantidade_retirada.grid(row=2, column=1, sticky="w", padx=5)
 
-botao_adicionar = customtkinter.CTkButton(frame_saida, text="Adicionar item", width=60, fg_color="green")
+botao_adicionar = customtkinter.CTkButton(frame_saida, text="Adicionar item", width=60, fg_color="green", command=adicionar_saida)
 botao_adicionar.grid(row=2, column=2, sticky="e", padx=5)
 
 scrollable_saida2 = customtkinter.CTkScrollableFrame(frame_saida, border_width=2, border_color="white",
                                                      scrollbar_button_color="white", width=225)
 scrollable_saida2.grid_columnconfigure(2, weight=1)
 scrollable_saida2.grid(row=3, column=1, columnspan=2, pady=5, padx=5, sticky="e")
+
+label_item = customtkinter.CTkLabel(master=scrollable_saida2, text="")
+label_item.grid(row=0, column=0, pady=5, padx=5, sticky="w")
 
 botao_cancelar_saida = customtkinter.CTkButton(frame_saida, text="Cancelar", fg_color="red", width=80, command=cancelar_saida)
 botao_cancelar_saida.grid(row=4, column=1, padx=5, sticky="w")
