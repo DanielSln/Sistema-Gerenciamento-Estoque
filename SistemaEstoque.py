@@ -302,30 +302,62 @@ def apagar_lixeira(label_item, botao_lixeira): #Apagar o item da tabela de saida
     linha -= 1
     
 
+
 itens_saida = []
 linha = 0
-
-def adicionar_saida(): #adicionar item na tabela la
+def adicionar_saida(): #Função para adicionar o produto na tabela de saida
     global linha, itens_saida
+ 
     nome_produto = entry_produto_saida.get().strip()
-    label_item = customtkinter.CTkLabel(scrollable_saida2, text=f"{nome_produto}")
-    label_item.grid(row=linha, column=0, padx=5, pady=5, sticky="w")
-    botao_lixeira = customtkinter.CTkButton(scrollable_saida2, image=image1, text="", width=40, command=lambda: apagar_lixeira(label_item, botao_lixeira), fg_color="red")
-    botao_lixeira.grid(row=linha, padx=130, column=1, sticky="e")
-    linha += 1
+ 
+    if not nome_produto or not quantidade_retirada.get().strip():
+        messagebox.showerror("Mensagem Sistema", "Erro!! Preencha todos os campos.")
+        return
 
-    if nome_produto in itens_saida:
-        messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
-        label_item.grid_forget()
-        botao_lixeira.grid_forget()
-            
-    else:
-        itens_saida.append(nome_produto)
-        
+    for item in itens_saida:
+        if item ["nome"] == nome_produto: #propriedade de nome do vetor
+            messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
+            return
+    label_item = customtkinter.CTkLabel(master=scrollable_saida2, text=f"{nome_produto}")
+    botao_lixeira = customtkinter.CTkButton(master=scrollable_saida2, width=40, fg_color="red",command=lambda: apagar_lixeira(nome_produto))
+
+    itens_saida.append({
+        "nome" : nome_produto,
+        "produto" : label_item,
+        "lixeira" : botao_lixeira
+    })
+
+    atualizar_tabela_saida()
+    #Limpa os campos de entry
+
+    entry_produto_saida.configure(state='normal')
+    entry_produto_saida.delete(0, "end")
+    quantidade_estoque_saida.configure(state='normal')
+    quantidade_estoque_saida.delete(0, "end")
+    quantidade_retirada.configure(state='normal')
+    quantidade_retirada.delete(0, "end")
 
 
-def cancelar_saida():
-    if messagebox.askyesno("Mensagem Sistema", "Deseja cancelar a saída do produto?"):
+def apagar_lixeira(nome_produto):
+    global itens_saida
+    #Vai remover do vetor 
+    itens_saida = [item for item in itens_saida if item["nome"] != nome_produto]
+    atualizar_tabela_saida()
+ 
+
+def atualizar_tabela_saida():
+    #Limpa tudo
+    for widget in scrollable_saida2.winfo_children():
+        widget.grid_forget()
+ 
+    #Hora de alinhar as parada
+    for index, item in enumerate(itens_saida): #Vai enumerar o nome, produto e o botao pra alinhar tudo de uma vez
+        item["label"].grid(row=index, column=0, padx=5, pady=5, sticky="w")
+        item["botao"].grid(row=index, column=1, padx=130, sticky="e")
+ 
+
+def cancelar_saida(): #Vai cancelar a saída dos produtos
+    if messagebox.askyesno("Mensagem Sistema", "Deseja cancelar a saída do(s) produto(s)?"): #Confirma se o usuario quer cancelar
         entry_produto_saida.delete(0, "end")
         quantidade_estoque_saida.delete(0, "end")
         quantidade_retirada.delete(0, "end")
@@ -334,7 +366,9 @@ def cancelar_saida():
 
 
 def salvar_saida():
-    pass
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    cursor.execute()
 
 
 
