@@ -280,7 +280,7 @@ def preencher_campos_saida(nomes):
         quantidade_estoque_saida.configure(state="disabled")  
         
 
-def checkbox_event_saida(nomes, var_checkbox_saida):
+def checkbox_event_saida(nomes, var_checkbox_saida): #nada de nadAAAAA
     global checkbox_anterior_saida
     
     if var_checkbox_saida.get() == 1:  # Se o checkbox foi marcado
@@ -430,7 +430,7 @@ def preencher_campos_entrada(nomes): #Vai preencher os campos de entry de acordo
         quantidade_estoque_entrada.configure(state="disabled")  
 
 
-def checkbox_event_entrada(nomes, var_checkbox_entrada):
+def checkbox_event_entrada(nomes, var_checkbox_entrada): #Bagui da entrada ai 
     global checkbox_anterior_entrada
     
     if var_checkbox_entrada.get() == 1:  # Se o checkbox foi marcado
@@ -445,7 +445,8 @@ def checkbox_event_entrada(nomes, var_checkbox_entrada):
         checkbox_anterior_entrada = None  # Remove a referência ao checkbox anterior
 
 
-
+def nadoca():
+    pass
 
 
 
