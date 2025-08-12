@@ -1,7 +1,7 @@
 # 🖥 Sistema de Gerenciamento de Estoque – Python + CustomTkinter + SQLite
 
 > Aplicativo desktop desenvolvido em **Python** utilizando a biblioteca **CustomTkinter** para interface gráfica e **SQLite** para banco de dados.  
-> O objetivo do projeto é [breve descrição da função principal do sistema – ex: "gerenciar estoque", "organizar lista de espera", "controlar atendimentos"].
+O objetivo do projeto é **criar uma aplicação prática e intuitiva para gerenciamento de estoque**, permitindo controle de entradas, saídas e atualização de produtos de forma simples e rápida.
 
 ---
 
