@@ -24,3 +24,7 @@ O objetivo do projeto é **criar uma aplicação prática e intuitiva para geren
 1. **Clone o repositório**
    ```bash
    git clone https://github.com/DanielSln/Projeto01.git
+   
+2. Acesse a pasta do projeto
+   ```bash
+   cd nome-do-repositorio
