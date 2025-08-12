@@ -27,4 +27,26 @@ O objetivo do projeto é **criar uma aplicação prática e intuitiva para geren
    
 2. Acesse a pasta do projeto
    ```bash
-   cd nome-do-repositorio
+   cd Projeto01
+
+3. Instale as dependências
+   ```bash
+   pip install -r requirements.txt
+
+4. Execute o aplicativo
+   ```bash
+   python main.py
+
+📅 Status do Projeto
+⏳ Em desenvolvimento
+
+✅ Estrutura do banco de dados criada
+
+✅ Interface inicial pronta
+
+🔜 Adicionar novas funcionalidades
+
+📜 Licença
+Este projeto está sob a licença MIT – você pode usar e modificar livremente para fins de estudo.
+
+✍ **Autor:** [Daniel Solano](https://github.com/DanielSln)
