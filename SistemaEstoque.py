@@ -335,8 +335,9 @@ def adicionar_saida(): #Função para adicionar o produto na tabela de saida
             messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
             return
     quantidade = quantidade_retirada.get().strip()
-    label_item = customtkinter.CTkLabel(master=scrollable_saida2, text=f"{nome_produto} - Qtd: {quantidade}")
-    botao_lixeira = customtkinter.CTkButton(master=scrollable_saida2, width=40, fg_color="red", text="X", command=lambda: apagar_lixeira(nome_produto))
+    texto_formatado = f"{nome_produto:<15} Qtd: {quantidade}"
+    label_item = customtkinter.CTkLabel(master=scrollable_saida2, text=texto_formatado, font=("Courier", 12))
+    botao_lixeira = customtkinter.CTkButton(master=scrollable_saida2, width=30, fg_color="red", text="X", command=lambda: apagar_lixeira(nome_produto))
 
     itens_saida.append({
         "nome" : nome_produto,
@@ -370,7 +371,7 @@ def atualizar_tabela_saida():
     #Hora de alinhar as parada
     for index, item in enumerate(itens_saida): #Vai enumerar o nome, produto e o botao pra alinhar tudo de uma vez
         item["label"].grid(row=index, column=0, padx=5, pady=5, sticky="w")
-        item["botao"].grid(row=index, column=1, padx=5, pady=5, sticky="e")
+        item["botao"].grid(row=index, column=1, padx=(10, 5), pady=5, sticky="e")
  
 
 def cancelar_saida(): #Vai cancelar a saída dos produtos
@@ -493,8 +494,9 @@ def adicionar_entrada():
             return
     
     quantidade = quantidade_entrada.get().strip()
-    label_item = customtkinter.CTkLabel(master=scrollable_entrada2, text=f"{nome_produto} - Qtd: {quantidade}")
-    botao_lixeira = customtkinter.CTkButton(master=scrollable_entrada2, width=40, fg_color="red", text="X", command=lambda: apagar_lixeira_entrada(nome_produto))
+    texto_formatado = f"{nome_produto:<15} Qtd: {quantidade}"
+    label_item = customtkinter.CTkLabel(master=scrollable_entrada2, text=texto_formatado, font=("Courier", 12))
+    botao_lixeira = customtkinter.CTkButton(master=scrollable_entrada2, width=30, fg_color="red", text="X", command=lambda: apagar_lixeira_entrada(nome_produto))
 
     itens_entrada.append({
         "nome": nome_produto,
@@ -524,7 +526,7 @@ def atualizar_tabela_entrada():
     
     for index, item in enumerate(itens_entrada):
         item["label"].grid(row=index, column=0, padx=5, pady=5, sticky="w")
-        item["botao"].grid(row=index, column=1, padx=5, pady=5, sticky="e")
+        item["botao"].grid(row=index, column=1, padx=(10, 5), pady=5, sticky="e")
 
 
 def nadoca():
