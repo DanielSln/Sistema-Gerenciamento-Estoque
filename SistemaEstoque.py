@@ -650,6 +650,78 @@ def tela_entrada():
     dados_entrada()
 
 
+def pesquisar_relatorio():
+    filtro = buscar_relatorio.get().strip()
+    
+    # Verificar qual relatório está ativo
+    if label_relatorio.cget("text") == "Relatório Estoque":
+        pesquisar_estoque(filtro)
+    elif label_relatorio.cget("text") == "Relatório Saída":
+        pesquisar_saida_relatorio(filtro)
+    elif label_relatorio.cget("text") == "Relatório Entrada":
+        pesquisar_entrada_relatorio(filtro)
+
+def pesquisar_estoque(filtro=""):
+    conexao = sqlite3.connect('SistemaEstoque.db')
+    cursor = conexao.cursor()
+    
+    if filtro:
+        cursor.execute("SELECT * FROM produtos WHERE nomeP LIKE ?", (f"%{filtro}%",))
+    else:
+        cursor.execute("SELECT * FROM produtos")
+    
+    recebe_dados = cursor.fetchall()
+    
+    for i in tabela_estoque.get_children():
+        tabela_estoque.delete(i)
+    
+    for i in recebe_dados:
+        nomes = str(i[1])
+        quantidade = str(i[2])
+        preco = float(i[3])
+        desc = str(i[4])
+        tabela_estoque.insert("", "end", values=(nomes, quantidade, preco, desc))
+    
+    conexao.close()
+
+def pesquisar_saida_relatorio(filtro=""):
+    for i in columns_saida.get_children():
+        columns_saida.delete(i)
+    
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    
+    if filtro:
+        cursor.execute("SELECT produto, quantidade, data_hora FROM saidas WHERE produto LIKE ? ORDER BY id DESC", (f"%{filtro}%",))
+    else:
+        cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+    
+    dados_saida = cursor.fetchall()
+    
+    for dado in dados_saida:
+        columns_saida.insert("", "end", values=dado)
+    
+    conexao.close()
+
+def pesquisar_entrada_relatorio(filtro=""):
+    for i in columns_entrada.get_children():
+        columns_entrada.delete(i)
+    
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    
+    if filtro:
+        cursor.execute("SELECT produto, quantidade, data_hora FROM entradas WHERE produto LIKE ? ORDER BY id DESC", (f"%{filtro}%",))
+    else:
+        cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+    
+    dados_entrada = cursor.fetchall()
+    
+    for dado in dados_entrada:
+        columns_entrada.insert("", "end", values=dado)
+    
+    conexao.close()
+
 def relatorio():
     # Frames que vão sumir
     tela.grid_forget()
@@ -658,7 +730,7 @@ def relatorio():
     frame_saida.grid_forget()
     frame_relatorio.grid(row=0, column=1)
     frame_relatorio.grid_propagate(False)
-    ler_dados()
+    pesquisar_estoque()
 
     #Botões
     botao_cadastrar.configure(state='normal')
@@ -686,20 +758,8 @@ def saida_relatorio():
     columns_saida.grid(row=2, column=0, columnspan=5)
     columns_saida.grid_propagate(False)
     
-    # Limpar dados anteriores
-    for i in columns_saida.get_children():
-        columns_saida.delete(i)
-    
-    # Carregar dados do banco
-    conexao = sqlite3.connect("SistemaEstoque.db")
-    cursor = conexao.cursor()
-    cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
-    dados_saida = cursor.fetchall()
-    
-    for dado in dados_saida:
-        columns_saida.insert("", "end", values=dado)
-    
-    conexao.close()
+    buscar_relatorio.delete(0, "end")
+    pesquisar_saida_relatorio()
     
     botao_estoque.configure(state='normal')
     botao_relatorio_entrada.configure(state='normal')
@@ -713,20 +773,8 @@ def entrada_relatorio():
     columns_entrada.grid(row=2, column=0, columnspan=5)
     columns_entrada.grid_propagate(False)
     
-    # Limpar dados anteriores
-    for i in columns_entrada.get_children():
-        columns_entrada.delete(i)
-    
-    # Carregar dados do banco
-    conexao = sqlite3.connect("SistemaEstoque.db")
-    cursor = conexao.cursor()
-    cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
-    dados_entrada = cursor.fetchall()
-    
-    for dado in dados_entrada:
-        columns_entrada.insert("", "end", values=dado)
-    
-    conexao.close()
+    buscar_relatorio.delete(0, "end")
+    pesquisar_entrada_relatorio()
     
     botao_estoque.configure(state='normal')
     botao_relatorio_entrada.configure(state='disabled')
@@ -1101,6 +1149,7 @@ label_relatorio.grid(row=0, column=0, columnspan=3, pady=10, sticky="n")
 # Campo de busca
 buscar_relatorio = customtkinter.CTkEntry(frame_relatorio, placeholder_text="Buscar Produto", width=200)
 buscar_relatorio.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+buscar_relatorio.bind("<KeyRelease>", lambda event: pesquisar_relatorio())
 
 # Botão de exportar
 botao_exportar = customtkinter.CTkButton(frame_relatorio, text="Exportar", fg_color="green", width=80,
