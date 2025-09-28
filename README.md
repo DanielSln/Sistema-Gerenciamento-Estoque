@@ -27,7 +27,7 @@ O objetivo do projeto é **criar uma aplicação prática e intuitiva para geren
    
 2. Acesse a pasta do projeto
    ```bash
-   cd Projeto01
+   cd Sistema-Gerenciamento-Estoque
 
 3. Instale as dependências
    ```bash
