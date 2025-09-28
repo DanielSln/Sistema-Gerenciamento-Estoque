@@ -40,6 +40,14 @@ def criar_bd(): #Cria o banco de dados
                                     data_hora TEXT NOT NULL
                                     )
                                 """)
+    
+    cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS entradas (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    produto TEXT NOT NULL,
+                                    quantidade INTEGER NOT NULL,
+                                    data_hora TEXT NOT NULL
+                                    )
+                                """)
     conexao.commit()
     cursor.close()
     
@@ -177,9 +185,21 @@ def salvar_edicao(): #Salvar as edições feitas no produto
     if preco_produto > 0:
         conexao = sqlite3.connect("SistemaEstoque.db")
         cursor = conexao.cursor()
+        
+        # Pegar o nome antigo do produto
+        cursor.execute("SELECT nomeP FROM produtos WHERE id = ?", (idproduto,))
+        nome_antigo = cursor.fetchone()[0]
 
-        cursor.execute(f"UPDATE produtos SET nomeP = '{novo_nome_produto}', precoP = '{preco_produto}', descricaoP = '{descricao_produto}' WHERE id = '{idproduto}'")
+        # Atualizar produto
+        cursor.execute("UPDATE produtos SET nomeP = ?, precoP = ?, descricaoP = ? WHERE id = ?", 
+                      (novo_nome_produto, preco_produto, descricao_produto, idproduto))
+        
+        # Atualizar registros de saída e entrada
+        cursor.execute("UPDATE saidas SET produto = ? WHERE produto = ?", (novo_nome_produto, nome_antigo))
+        cursor.execute("UPDATE entradas SET produto = ? WHERE produto = ?", (novo_nome_produto, nome_antigo))
+        
         conexao.commit()
+        conexao.close()
 
         messagebox.showinfo("Mensagem Sistema", "Edição concluída!")
 
@@ -191,7 +211,6 @@ def salvar_edicao(): #Salvar as edições feitas no produto
         editar_preco.delete(0, "end")
         editar_desc.delete("1.0", "end")
         idproduto = None
-        conexao.close()
     else:
         messagebox.showerror("Mensagem Sistema", "Erro! Preço inválido!")
 
@@ -205,8 +224,12 @@ def excluir_produto(): ##Excluir o produto selecionado
         cursor = conexao.cursor()
         
         try:
+            # Excluir registros relacionados primeiro
+            cursor.execute("DELETE FROM saidas WHERE produto = ?", (nome_produto,))
+            cursor.execute("DELETE FROM entradas WHERE produto = ?", (nome_produto,))
             cursor.execute("DELETE FROM produtos WHERE nomeP = ?", (nome_produto,))
             conexao.commit()
+            
             editar_nome.delete(0, "end")
             editar_preco.delete(0, "end")
             editar_desc.delete('1.0', 'end')
@@ -400,7 +423,13 @@ def salvar_saida():
     
     for item in itens_saida:
         nome_produto = item["nome"]
-        quantidade = item["quantidade"]
+        quantidade = int(item["quantidade"])
+        
+        # Atualizar estoque (diminuir quantidade)
+        cursor.execute("UPDATE produtos SET quantidadeP = quantidadeP - ? WHERE nomeP = ?", 
+                      (quantidade, nome_produto))
+        
+        # Registrar saída
         cursor.execute("INSERT INTO saidas (produto, quantidade, data_hora) VALUES (?, ?, ?)", 
                       (nome_produto, quantidade, data_atual))
     
@@ -532,18 +561,13 @@ def adicionar_entrada():
 
     itens_entrada.append({
         "nome": nome_produto,
+        "quantidade": quantidade,
         "label": label_item,
         "botao": botao_lixeira
     })
 
     atualizar_tabela_entrada()
-    
-    entry_produto_entrada.configure(state='normal')
-    entry_produto_entrada.delete(0, "end")
-    quantidade_estoque_entrada.configure(state='normal')
-    quantidade_estoque_entrada.delete(0, "end")
-    quantidade_entrada.configure(state='normal')
-    quantidade_entrada.delete(0, "end")
+    limpar_campos_entrada()
 
 
 def apagar_lixeira_entrada(nome_produto):
@@ -688,6 +712,22 @@ def entrada_relatorio():
     columns_saida.grid_forget()
     columns_entrada.grid(row=2, column=0, columnspan=5)
     columns_entrada.grid_propagate(False)
+    
+    # Limpar dados anteriores
+    for i in columns_entrada.get_children():
+        columns_entrada.delete(i)
+    
+    # Carregar dados do banco
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+    dados_entrada = cursor.fetchall()
+    
+    for dado in dados_entrada:
+        columns_entrada.insert("", "end", values=dado)
+    
+    conexao.close()
+    
     botao_estoque.configure(state='normal')
     botao_relatorio_entrada.configure(state='disabled')
     botao_saida_relatorio.configure(state='normal')
@@ -987,15 +1027,44 @@ scrollable_entrada2.grid_columnconfigure(2, weight=1)
 scrollable_entrada2.grid(row=3, column=1, columnspan=2, pady=5, padx=5, sticky="e")
 
 def salvar_entrada():
-    global itens_entrada
+    global itens_entrada, checkbox_anterior_entrada
     if not itens_entrada:
         messagebox.showerror("Mensagem Sistema", "Nenhum item para salvar!")
         return
     
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    
+    from datetime import datetime
+    data_atual = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    for item in itens_entrada:
+        nome_produto = item["nome"]
+        quantidade = int(item["quantidade"])
+        
+        # Atualizar estoque (aumentar quantidade)
+        cursor.execute("UPDATE produtos SET quantidadeP = quantidadeP + ? WHERE nomeP = ?", 
+                      (quantidade, nome_produto))
+        
+        # Registrar entrada
+        cursor.execute("INSERT INTO entradas (produto, quantidade, data_hora) VALUES (?, ?, ?)", 
+                      (nome_produto, quantidade, data_atual))
+    
+    conexao.commit()
+    conexao.close()
+    
+    messagebox.showinfo("Mensagem Sistema", "Entrada concluída com sucesso!")
+    
+    buscar_entrada.delete(0, "end")
+    dados_entrada()
+    ler_dados()
+    
     itens_entrada.clear()
     atualizar_tabela_entrada()
     limpar_campos_entrada()
-    messagebox.showinfo("Mensagem Sistema", "Entrada salva com sucesso!")
+    if checkbox_anterior_entrada:
+        checkbox_anterior_entrada.set(0)
+        checkbox_anterior_entrada = None
 
 def cancelar_entrada():
     global itens_entrada, checkbox_anterior_entrada
@@ -1057,7 +1126,7 @@ columns_entrada.grid(row=3, column=0, columnspan=3, padx=10, pady=5, sticky="nse
 
 for coluna in colunas_entrada:
     columns_entrada.heading(coluna, text=coluna)
-    columns_entrada.column(coluna, width=tamanho_coluna + 70)
+    columns_entrada.column(coluna, width=tamanho_coluna + 70, anchor=CENTER)
 
 # Tabela Saída
 colunas_saida = ["Produto", "Quantidade", "Data / Hora"]
