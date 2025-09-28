@@ -781,53 +781,103 @@ def entrada_relatorio():
     botao_saida_relatorio.configure(state='normal')
 
 
+def exportar_dados():
+    try:
+        from tkinter import filedialog
+        import openpyxl
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import inch
+        
+        # Escolher onde salvar
+        arquivo = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx"), ("PDF files", "*.pdf")]
+        )
+        
+        if not arquivo:
+            return
+            
+        # Conectar ao banco
+        conexao = sqlite3.connect("SistemaEstoque.db")
+        cursor = conexao.cursor()
+        
+        if arquivo.endswith('.xlsx'):
+            # Exportar para Excel
+            wb = openpyxl.Workbook()
+            
+            # Aba Estoque
+            ws_estoque = wb.active
+            ws_estoque.title = "Estoque"
+            ws_estoque.append(["Produto", "Quantidade", "Preço", "Descrição"])
+            cursor.execute("SELECT nomeP, quantidadeP, precoP, descricaoP FROM produtos")
+            for row in cursor.fetchall():
+                ws_estoque.append(row)
+            
+            # Aba Saídas
+            ws_saidas = wb.create_sheet("Saídas")
+            ws_saidas.append(["Produto", "Quantidade", "Data/Hora"])
+            cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+            for row in cursor.fetchall():
+                ws_saidas.append(row)
+            
+            # Aba Entradas
+            ws_entradas = wb.create_sheet("Entradas")
+            ws_entradas.append(["Produto", "Quantidade", "Data/Hora"])
+            cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+            for row in cursor.fetchall():
+                ws_entradas.append(row)
+            
+            wb.save(arquivo)
+            
+        elif arquivo.endswith('.pdf'):
+            # Exportar para PDF
+            c = canvas.Canvas(arquivo, pagesize=letter)
+            y = 750
+            
+            # Título
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(50, y, "Relatório do Sistema de Estoque")
+            y -= 40
+            
+            # Estoque
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(50, y, "ESTOQUE")
+            y -= 20
+            c.setFont("Helvetica", 10)
+            cursor.execute("SELECT nomeP, quantidadeP, precoP FROM produtos")
+            for row in cursor.fetchall():
+                c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - R$ {row[2]}")
+                y -= 15
+                if y < 100:
+                    c.showPage()
+                    y = 750
+            
+            y -= 20
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(50, y, "SAÍDAS")
+            y -= 20
+            c.setFont("Helvetica", 10)
+            cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC LIMIT 20")
+            for row in cursor.fetchall():
+                c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - {row[2]}")
+                y -= 15
+                if y < 100:
+                    c.showPage()
+                    y = 750
+            
+            c.save()
+        
+        conexao.close()
+        messagebox.showinfo("Sucesso", "Relatório exportado com sucesso!")
+        
+    except ImportError:
+        messagebox.showerror("Erro", "Instale as dependências: pip install openpyxl reportlab")
+    except Exception as e:
+        messagebox.showerror("Erro", f"Erro ao exportar: {str(e)}")
+
 def exportar_relatorio():
-    tela_export = customtkinter.CTkToplevel()
-    tela_export.geometry('570x300')
-    tela_export.title("Exportar Arquivos")
-    tela_export.attributes("-topmost", True)
-    tela_export.resizable(width=False, height=False)
-
-    # Frame após clicar no botão de exportar
-    frame_export = customtkinter.CTkFrame(tela_export, width=500, height=300)
-    frame_export.pack(pady=10, anchor='center')
-    frame_export.grid_propagate(False)
-
-    # label da tela
-    label_escolher_relatorio = customtkinter.CTkLabel(frame_export, text="Escolher Relatório(s)", font=("Arial", 20))
-    label_escolher_relatorio.grid(row=0, column=0, pady=30)
-
-    escolher_extensao = customtkinter.CTkLabel(frame_export, text="Escolher Extensão", font=("Arial", 20))
-    escolher_extensao.grid(row=0, column=1, padx=50, pady=10)
-
-    # CheckBox Tela Relatório
-    exportar_estoque = customtkinter.CTkCheckBox(frame_export, text="Exportar Estoque", font=("Arial", 15),
-                                                 corner_radius=15)
-    exportar_estoque.grid(row=1, column=0, sticky="w", pady=10, padx=50)
-
-    exportar_entrda = customtkinter.CTkCheckBox(frame_export, text="Exportar Entrada", font=("Arial", 15),
-                                                corner_radius=15)
-    exportar_entrda.grid(row=2, column=0, sticky="w", pady=10, padx=50)
-
-    exportar_saida = customtkinter.CTkCheckBox(frame_export, text="Exportar Saída", font=("Arial", 15),
-                                               corner_radius=15)
-    exportar_saida.grid(row=3, column=0, sticky="w", pady=10, padx=50)
-
-    # Extensões
-    word = customtkinter.CTkCheckBox(frame_export, text="WORD", font=("Arial", 15), corner_radius=15)
-    word.grid(row=1, column=1, sticky="w", pady=10, padx=50)
-
-    pdf = customtkinter.CTkCheckBox(frame_export, text="PDF", font=("Arial", 15), corner_radius=15)
-    pdf.grid(row=2, column=1, sticky="w", pady=10, padx=50)
-
-    excel = customtkinter.CTkCheckBox(frame_export, text="EXCEL", font=("Arial", 15), corner_radius=15)
-    excel.grid(row=3, column=1, sticky="w", padx=50, pady=10)
-
-    salvar_export = customtkinter.CTkButton(frame_export, text="Cancelar", width=70, fg_color="red", command=sair)
-    salvar_export.grid(row=4, column=0, pady=20, sticky="e")
-
-    cancelar_export = customtkinter.CTkButton(frame_export, text="Salvar", width=70)
-    cancelar_export.grid(row=4, column=1, sticky="w", padx=20)
+    exportar_dados()
 
 
 def sair():
