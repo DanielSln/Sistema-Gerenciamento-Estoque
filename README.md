@@ -23,7 +23,7 @@ O objetivo do projeto é **criar uma aplicação prática e intuitiva para geren
 ## 🚀 Como Executar
 1. **Clone o repositório**
    ```bash
-   git clone https://github.com/DanielSln/Projeto01.git
+   git clone https://github.com/DanielSln/Sistema-Gerenciamento-Estoque.git
    
 2. Acesse a pasta do projeto
    ```bash
