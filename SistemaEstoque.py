@@ -325,8 +325,8 @@ def apagar_lixeira(label_item, botao_lixeira): #Apagar o item da tabela de saida
 itens_saida = []
 itens_entrada = []
 linha = 0
-def adicionar_saida(): #Função para adicionar o produto na tabela de saida
-    global linha, itens_saida
+def adicionar_saida():
+    global itens_saida
  
     nome_produto = entry_produto_saida.get().strip()
  
@@ -335,29 +335,24 @@ def adicionar_saida(): #Função para adicionar o produto na tabela de saida
         return
 
     for item in itens_saida:
-        if item ["nome"] == nome_produto: #propriedade de nome do vetor
+        if item["nome"] == nome_produto:
             messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
             return
+    
     quantidade = quantidade_retirada.get().strip()
     texto_formatado = f"{nome_produto:<15} Qtd: {quantidade}"
     label_item = customtkinter.CTkLabel(master=scrollable_saida2, text=texto_formatado, font=("Courier", 12))
     botao_lixeira = customtkinter.CTkButton(master=scrollable_saida2, width=30, fg_color="red", text="X", command=lambda: apagar_lixeira(nome_produto))
 
     itens_saida.append({
-        "nome" : nome_produto,
-        "label" : label_item,
-        "botao" : botao_lixeira
+        "nome": nome_produto,
+        "quantidade": quantidade,
+        "label": label_item,
+        "botao": botao_lixeira
     })
 
     atualizar_tabela_saida()
-    #Limpa os campos de entry
-
-    entry_produto_saida.configure(state='normal')
-    entry_produto_saida.delete(0, "end")
-    quantidade_estoque_saida.configure(state='normal')
-    quantidade_estoque_saida.delete(0, "end")
-    quantidade_retirada.configure(state='normal')
-    quantidade_retirada.delete(0, "end")
+    limpar_campos_saida()
 
 
 def apagar_lixeira(nome_produto):
@@ -392,7 +387,7 @@ def cancelar_saida(): #Vai cancelar a saída dos produtos
 
 
 def salvar_saida():
-    global itens_saida
+    global itens_saida, checkbox_anterior_saida
     if not itens_saida:
         messagebox.showerror("Mensagem Sistema", "Nenhum item para salvar!")
         return
@@ -405,19 +400,25 @@ def salvar_saida():
     
     for item in itens_saida:
         nome_produto = item["nome"]
-        # Extrair quantidade do texto do label
-        texto_label = item["label"].cget("text")
-        quantidade = texto_label.split("Qtd: ")[1]
+        quantidade = item["quantidade"]
         cursor.execute("INSERT INTO saidas (produto, quantidade, data_hora) VALUES (?, ?, ?)", 
                       (nome_produto, quantidade, data_atual))
     
     conexao.commit()
     conexao.close()
     
+    messagebox.showinfo("Mensagem Sistema", "Saída concluída com sucesso!")
+    
+    buscar_saida.delete(0, "end")
+    dados_saida()
+    ler_dados()
+    
     itens_saida.clear()
     atualizar_tabela_saida()
     limpar_campos_saida()
-    messagebox.showinfo("Mensagem Sistema", "Saída concluída com sucesso!")
+    if checkbox_anterior_saida:
+        checkbox_anterior_saida.set(0)
+        checkbox_anterior_saida = None
 
 
 
@@ -746,8 +747,7 @@ def sair():
     criar_bd.close()
 
 
-if not os.path.exists("SistemaEstoque.db"):
-    criar_bd()
+criar_bd()
 
 janela = customtkinter.CTk()
 janela.title("")
@@ -903,7 +903,6 @@ botao_salvar_editar.grid(row=5, column=3, columnspan=1, padx=5, pady=5, sticky="
 
 #==================================================================== Saída ==============================================================
 frame_saida = customtkinter.CTkFrame(janela, width=590, height=400, corner_radius=20)
-frame_saida.grid(row=1, column=1)
 frame_saida.grid_propagate(False)
 label_inicial_saida = customtkinter.CTkLabel(frame_saida, text="Saída de Produto", font=("Arial", 20, "bold"))
 label_inicial_saida.grid(row=0, column=0, padx=15, columnspan=2, sticky="en")
@@ -942,8 +941,8 @@ label_item.grid(row=0, column=0, pady=5, padx=5, sticky="w")
 botao_cancelar_saida = customtkinter.CTkButton(frame_saida, text="Cancelar", fg_color="red", width=80, command=cancelar_saida)
 botao_cancelar_saida.grid(row=4, column=1, padx=5, sticky="w")
 
-salvar_saida = customtkinter.CTkButton(frame_saida, text="Salvar", width=80, command=salvar_saida)
-salvar_saida.grid(row=4, column=2, padx=10, sticky="ne")
+botao_salvar_saida = customtkinter.CTkButton(frame_saida, text="Salvar", width=80, command=salvar_saida)
+botao_salvar_saida.grid(row=4, column=2, padx=10, sticky="ne")
 
 
 
@@ -952,7 +951,6 @@ salvar_saida.grid(row=4, column=2, padx=10, sticky="ne")
 
 #==================================================================== Entrada ==============================================================
 frame_entrada = customtkinter.CTkFrame(janela, width=590, height=400, corner_radius=20)
-frame_entrada.grid(row=1, column=1)
 frame_entrada.grid_propagate(False)
 text_entrada = customtkinter.CTkLabel(frame_entrada, text="Entrada de Produto", font=("Arial", 20, "bold"))
 text_entrada.grid(row=0, column=0, padx=15, columnspan=2, sticky="en")
@@ -1024,7 +1022,6 @@ salvar_entrada.grid(row=4, column=2, padx=10, sticky="ne")
 
 #=============================================================== Frame e label relatório =====================================================
 frame_relatorio = customtkinter.CTkFrame(janela, width=590, height=400, corner_radius=20)
-frame_relatorio.grid(row=1, column=1, columnspan=5, padx=10, pady=10, sticky="nsew")
 frame_relatorio.grid_propagate(False)
 frame_relatorio.grid_columnconfigure(0, weight=1)
 frame_relatorio.grid_rowconfigure(2, weight=1)
@@ -1069,7 +1066,7 @@ columns_saida.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky="nsew"
 
 for coluna in colunas_saida:
     columns_saida.heading(coluna, text=coluna)
-    columns_saida.column(coluna, width=tamanho_coluna + 70)
+    columns_saida.column(coluna, width=tamanho_coluna + 70, anchor=CENTER)
 
 # Botões do estoque
 frame_botoes = customtkinter.CTkFrame(frame_relatorio, fg_color="transparent")
