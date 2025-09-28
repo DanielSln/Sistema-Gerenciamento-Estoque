@@ -319,6 +319,7 @@ def apagar_lixeira(label_item, botao_lixeira): #Apagar o item da tabela de saida
 
 
 itens_saida = []
+itens_entrada = []
 linha = 0
 def adicionar_saida(): #Função para adicionar o produto na tabela de saida
     global linha, itens_saida
@@ -333,13 +334,14 @@ def adicionar_saida(): #Função para adicionar o produto na tabela de saida
         if item ["nome"] == nome_produto: #propriedade de nome do vetor
             messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
             return
-    label_item = customtkinter.CTkLabel(master=scrollable_saida2, text=f"{nome_produto}")
-    botao_lixeira = customtkinter.CTkButton(master=scrollable_saida2, width=40, fg_color="red",command=lambda: apagar_lixeira(nome_produto))
+    quantidade = quantidade_retirada.get().strip()
+    label_item = customtkinter.CTkLabel(master=scrollable_saida2, text=f"{nome_produto} - Qtd: {quantidade}")
+    botao_lixeira = customtkinter.CTkButton(master=scrollable_saida2, width=40, fg_color="red", text="X", command=lambda: apagar_lixeira(nome_produto))
 
     itens_saida.append({
         "nome" : nome_produto,
-        "produto" : label_item,
-        "lixeira" : botao_lixeira
+        "label" : label_item,
+        "botao" : botao_lixeira
     })
 
     atualizar_tabela_saida()
@@ -368,7 +370,7 @@ def atualizar_tabela_saida():
     #Hora de alinhar as parada
     for index, item in enumerate(itens_saida): #Vai enumerar o nome, produto e o botao pra alinhar tudo de uma vez
         item["label"].grid(row=index, column=0, padx=5, pady=5, sticky="w")
-        item["botao"].grid(row=index, column=1, padx=130, sticky="e")
+        item["botao"].grid(row=index, column=1, padx=5, pady=5, sticky="e")
  
 
 def cancelar_saida(): #Vai cancelar a saída dos produtos
@@ -474,6 +476,55 @@ def pesquisar_produto_entrada():
     filtro = buscar_entrada.get().strip()
     dados_entrada(filtro)
     limpar_campos_entrada()
+
+
+def adicionar_entrada():
+    global itens_entrada
+    
+    nome_produto = entry_produto_entrada.get().strip()
+    
+    if not nome_produto or not quantidade_entrada.get().strip():
+        messagebox.showerror("Mensagem Sistema", "Erro!! Preencha todos os campos.")
+        return
+
+    for item in itens_entrada:
+        if item["nome"] == nome_produto:
+            messagebox.showerror("Mensagem Sistema", "Produto já adicionado!")
+            return
+    
+    quantidade = quantidade_entrada.get().strip()
+    label_item = customtkinter.CTkLabel(master=scrollable_entrada2, text=f"{nome_produto} - Qtd: {quantidade}")
+    botao_lixeira = customtkinter.CTkButton(master=scrollable_entrada2, width=40, fg_color="red", text="X", command=lambda: apagar_lixeira_entrada(nome_produto))
+
+    itens_entrada.append({
+        "nome": nome_produto,
+        "label": label_item,
+        "botao": botao_lixeira
+    })
+
+    atualizar_tabela_entrada()
+    
+    entry_produto_entrada.configure(state='normal')
+    entry_produto_entrada.delete(0, "end")
+    quantidade_estoque_entrada.configure(state='normal')
+    quantidade_estoque_entrada.delete(0, "end")
+    quantidade_entrada.configure(state='normal')
+    quantidade_entrada.delete(0, "end")
+
+
+def apagar_lixeira_entrada(nome_produto):
+    global itens_entrada
+    itens_entrada = [item for item in itens_entrada if item["nome"] != nome_produto]
+    atualizar_tabela_entrada()
+
+
+def atualizar_tabela_entrada():
+    for widget in scrollable_entrada2.winfo_children():
+        widget.grid_forget()
+    
+    for index, item in enumerate(itens_entrada):
+        item["label"].grid(row=index, column=0, padx=5, pady=5, sticky="w")
+        item["botao"].grid(row=index, column=1, padx=5, pady=5, sticky="e")
 
 
 def nadoca():
@@ -878,7 +929,7 @@ quantidade_estoque_entrada.grid(row=1, column=2, sticky="w", padx=5)
 quantidade_entrada = customtkinter.CTkEntry(frame_entrada, placeholder_text="Quantidade:", width=90)
 quantidade_entrada.grid(row=2, column=1, sticky="w", padx=5)
 
-botao_adicionar_entrada = customtkinter.CTkButton(frame_entrada, text="Adicionar item", width=60, fg_color="green")
+botao_adicionar_entrada = customtkinter.CTkButton(frame_entrada, text="Adicionar item", width=60, fg_color="green", command=adicionar_entrada)
 botao_adicionar_entrada.grid(row=2, column=2, sticky="e", padx=5)
 
 tabela_dois_entrada = ["Produto 1", "Produto 2", "Produto 3", "Produto 4", "Produto 5", "Produto 6", "Produto 7",
