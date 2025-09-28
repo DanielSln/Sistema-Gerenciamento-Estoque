@@ -94,18 +94,21 @@ def ler_dados():
     conexao.close()
 
 
-def tabela_produtos_edicao():
-    global idproduto
+def tabela_produtos_edicao(filtro=""):
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
-    cursor.execute("SELECT * FROM produtos")
+    
+    if filtro:
+        cursor.execute("SELECT * FROM produtos WHERE nomeP LIKE ?", (f"%{filtro}%",))
+    else:
+        cursor.execute("SELECT * FROM produtos")
+    
     recebe_dados = cursor.fetchall()
     
     for widget in scrollable_frame_edit.winfo_children():
         widget.destroy()    
 
     for i in recebe_dados:
-        idproduto = int(i[0])  #Declarando pra usar depois
         nomes = str(i[1])
         itens = i [1]
 
@@ -117,13 +120,14 @@ def tabela_produtos_edicao():
 
 
 def preencher_campos_edicao(nomes):  #Preencher os campos de edição com os dados do produto selecionado
-    global produtoid
+    global idproduto
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
     cursor.execute("SELECT * FROM produtos where nomeP = ?", (nomes,))
     dados_produto = cursor.fetchone()
 
     if dados_produto:
+        idproduto = dados_produto[0]  # Captura o ID correto do produto selecionado
         editar_nome.delete(0, "end")
         editar_nome.insert(0, dados_produto[1])
 
@@ -171,9 +175,10 @@ def salvar_edicao(): #Salvar as edições feitas no produto
 
         messagebox.showinfo("Mensagem Sistema", "Edição concluída!")
 
+        buscar_entry_editar.delete(0, "end")
         tabela_produtos_edicao()
         ler_dados()
-
+        
         editar_nome.delete(0, "end")
         editar_preco.delete(0, "end")
         editar_desc.delete("1.0", "end")
@@ -209,6 +214,12 @@ def excluir_produto(): ##Excluir o produto selecionado
             conexao.close()
     
 
+def pesquisar_produto_edicao():
+    filtro = buscar_entry_editar.get().strip()
+    tabela_produtos_edicao(filtro)
+    limpar_campos_edicao()
+
+
 def cancelar_edicao(): ##Cancela edição do produto
     editar_nome.delete(0, "end")
     editar_preco.delete(0, "end")
@@ -226,10 +237,14 @@ def cancelar_edicao(): ##Cancela edição do produto
 
 #============================================================== Def's de Saída ===============================================================#
 
-def dados_saida(): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
+def dados_saida(filtro=""): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
-    cursor.execute("SELECT * FROM produtos")
+    
+    if filtro:
+        cursor.execute("SELECT * FROM produtos WHERE nomeP LIKE ?", (f"%{filtro}%",))
+    else:
+        cursor.execute("SELECT * FROM produtos")
 
     recebe_dados = cursor.fetchall()
 
@@ -374,10 +389,14 @@ def salvar_saida():
 
 
 #============================================================== Def's de entrada ===============================================================#
-def dados_entrada(): #Recebe os nomes dos produtos 
+def dados_entrada(filtro=""): #Recebe os nomes dos produtos 
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
-    cursor.execute("SELECT * FROM produtos")
+    
+    if filtro:
+        cursor.execute("SELECT * FROM produtos WHERE nomeP LIKE ?", (f"%{filtro}%",))
+    else:
+        cursor.execute("SELECT * FROM produtos")
 
     recebe_dados = cursor.fetchall()
 
@@ -443,6 +462,18 @@ def checkbox_event_entrada(nomes, var_checkbox_entrada): #Bagui da entrada ai
     else:  # Se o checkbox foi desmarcado
         limpar_campos_entrada()
         checkbox_anterior_entrada = None  # Remove a referência ao checkbox anterior
+
+
+def pesquisar_produto_saida():
+    filtro = buscar_saida.get().strip()
+    dados_saida(filtro)
+    limpar_campos_saida()
+
+
+def pesquisar_produto_entrada():
+    filtro = buscar_entrada.get().strip()
+    dados_entrada(filtro)
+    limpar_campos_entrada()
 
 
 def nadoca():
@@ -732,6 +763,7 @@ contador_produtos.grid(row=1, column=1, padx=1, pady=1, columnspan=2, sticky="ew
 
 buscar_entry_editar = customtkinter.CTkEntry(frame_editar, placeholder_text="Buscar Produto", width=230)
 buscar_entry_editar.grid(row=1, column=0, rowspan=1, padx=5, pady=5, sticky="e")
+buscar_entry_editar.bind("<KeyRelease>", lambda event: pesquisar_produto_edicao())
 
 editar_nome = customtkinter.CTkEntry(frame_editar, placeholder_text="Nome do produto", width=200)
 editar_nome.grid(row=2, column=1, columnspan=2, padx=3, pady=3, sticky="w")
@@ -778,6 +810,7 @@ label_inicial_saida.grid(row=0, column=0, padx=15, columnspan=2, sticky="en")
 
 buscar_saida = customtkinter.CTkEntry(frame_saida, placeholder_text="Buscar Produto:", width=225)
 buscar_saida.grid(row=1, column=0, rowspan=1, pady=25, padx=5)
+buscar_saida.bind("<KeyRelease>", lambda event: pesquisar_produto_saida())
 
 # Tabela da saída
 scrollable_saida = customtkinter.CTkScrollableFrame(frame_saida, border_width=2, border_color="white",
@@ -826,6 +859,7 @@ text_entrada.grid(row=0, column=0, padx=15, columnspan=2, sticky="en")
 
 buscar_entrada = customtkinter.CTkEntry(frame_entrada, placeholder_text="Buscar Produto:", width=225)
 buscar_entrada.grid(row=1, column=0, rowspan=1, pady=25, padx=5)
+buscar_entrada.bind("<KeyRelease>", lambda event: pesquisar_produto_entrada())
 
 # Tabela 1 do frame de Entrada
 scrollable_entrada = customtkinter.CTkScrollableFrame(frame_entrada, border_width=2, border_color="white",
