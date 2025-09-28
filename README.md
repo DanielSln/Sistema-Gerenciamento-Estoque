@@ -37,16 +37,4 @@ O objetivo do projeto é **criar uma aplicação prática e intuitiva para geren
    ```bash
    python main.py
 
-📅 Status do Projeto
-⏳ Em desenvolvimento
-
-✅ Estrutura do banco de dados criada
-
-✅ Interface inicial pronta
-
-🔜 Adicionar novas funcionalidades
-
-📜 Licença
-Este projeto está sob a licença MIT – você pode usar e modificar livremente para fins de estudo.
-
 ✍ **Autor:** [Daniel Solano](https://github.com/DanielSln)
