@@ -32,6 +32,14 @@ def criar_bd(): #Cria o banco de dados
                                     descricaoP TEXT
                                     )
                                 """)
+    
+    cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS saidas (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    produto TEXT NOT NULL,
+                                    quantidade INTEGER NOT NULL,
+                                    data_hora TEXT NOT NULL
+                                    )
+                                """)
     conexao.commit()
     cursor.close()
     
@@ -231,10 +239,6 @@ def cancelar_edicao(): ##Cancela edição do produto
 
 
 
-
-
-
-
 #============================================================== Def's de Saída ===============================================================#
 
 def dados_saida(filtro=""): #Vai receber os produtos cadastrados e vai configurar a tabela da tela de saida de produtos 
@@ -375,18 +379,45 @@ def atualizar_tabela_saida():
  
 
 def cancelar_saida(): #Vai cancelar a saída dos produtos
-    if messagebox.askyesno("Mensagem Sistema", "Deseja cancelar a saída do(s) produto(s)?"): #Confirma se o usuario quer cancelar
-        entry_produto_saida.delete(0, "end")
-        quantidade_estoque_saida.delete(0, "end")
-        quantidade_retirada.delete(0, "end")
+    global itens_saida, checkbox_anterior_saida
+    if messagebox.askyesno("Mensagem Sistema", "Deseja cancelar a saída do(s) produto(s)?"):
+        itens_saida.clear()
+        atualizar_tabela_saida()
+        limpar_campos_saida()
+        if checkbox_anterior_saida:
+            checkbox_anterior_saida.set(0)
+            checkbox_anterior_saida = None
+        dados_saida()
         messagebox.showinfo("Mensagem Sistema", "Saída de produto cancelada pelo usuário.")
-        scrollable_saida2.destroy()
 
 
 def salvar_saida():
+    global itens_saida
+    if not itens_saida:
+        messagebox.showerror("Mensagem Sistema", "Nenhum item para salvar!")
+        return
+    
     conexao = sqlite3.connect("SistemaEstoque.db")
     cursor = conexao.cursor()
-    cursor.execute()
+    
+    from datetime import datetime
+    data_atual = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    for item in itens_saida:
+        nome_produto = item["nome"]
+        # Extrair quantidade do texto do label
+        texto_label = item["label"].cget("text")
+        quantidade = texto_label.split("Qtd: ")[1]
+        cursor.execute("INSERT INTO saidas (produto, quantidade, data_hora) VALUES (?, ?, ?)", 
+                      (nome_produto, quantidade, data_atual))
+    
+    conexao.commit()
+    conexao.close()
+    
+    itens_saida.clear()
+    atualizar_tabela_saida()
+    limpar_campos_saida()
+    messagebox.showinfo("Mensagem Sistema", "Saída concluída com sucesso!")
 
 
 
@@ -626,9 +657,25 @@ def relatorio():
 def saida_relatorio():
     label_relatorio.configure(text="Relatório Saída")
     tabela_estoque.grid_forget()
-    columns_saida.grid_forget()
+    columns_entrada.grid_forget()
     columns_saida.grid(row=2, column=0, columnspan=5)
     columns_saida.grid_propagate(False)
+    
+    # Limpar dados anteriores
+    for i in columns_saida.get_children():
+        columns_saida.delete(i)
+    
+    # Carregar dados do banco
+    conexao = sqlite3.connect("SistemaEstoque.db")
+    cursor = conexao.cursor()
+    cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+    dados_saida = cursor.fetchall()
+    
+    for dado in dados_saida:
+        columns_saida.insert("", "end", values=dado)
+    
+    conexao.close()
+    
     botao_estoque.configure(state='normal')
     botao_relatorio_entrada.configure(state='normal')
     botao_saida_relatorio.configure(state='disabled')
@@ -895,7 +942,7 @@ label_item.grid(row=0, column=0, pady=5, padx=5, sticky="w")
 botao_cancelar_saida = customtkinter.CTkButton(frame_saida, text="Cancelar", fg_color="red", width=80, command=cancelar_saida)
 botao_cancelar_saida.grid(row=4, column=1, padx=5, sticky="w")
 
-salvar_saida = customtkinter.CTkButton(frame_saida, text="Salvar", width=80)
+salvar_saida = customtkinter.CTkButton(frame_saida, text="Salvar", width=80, command=salvar_saida)
 salvar_saida.grid(row=4, column=2, padx=10, sticky="ne")
 
 
@@ -941,10 +988,33 @@ scrollable_entrada2 = customtkinter.CTkScrollableFrame(frame_entrada, border_wid
 scrollable_entrada2.grid_columnconfigure(2, weight=1)
 scrollable_entrada2.grid(row=3, column=1, columnspan=2, pady=5, padx=5, sticky="e")
 
-cancelar_entrada = customtkinter.CTkButton(frame_entrada, text="Cancelar", fg_color="red", width=80)
+def salvar_entrada():
+    global itens_entrada
+    if not itens_entrada:
+        messagebox.showerror("Mensagem Sistema", "Nenhum item para salvar!")
+        return
+    
+    itens_entrada.clear()
+    atualizar_tabela_entrada()
+    limpar_campos_entrada()
+    messagebox.showinfo("Mensagem Sistema", "Entrada salva com sucesso!")
+
+def cancelar_entrada():
+    global itens_entrada, checkbox_anterior_entrada
+    if messagebox.askyesno("Mensagem Sistema", "Deseja cancelar a entrada do(s) produto(s)?"):
+        itens_entrada.clear()
+        atualizar_tabela_entrada()
+        limpar_campos_entrada()
+        if checkbox_anterior_entrada:
+            checkbox_anterior_entrada.set(0)
+            checkbox_anterior_entrada = None
+        dados_entrada()
+        messagebox.showinfo("Mensagem Sistema", "Entrada cancelada!")
+
+cancelar_entrada = customtkinter.CTkButton(frame_entrada, text="Cancelar", fg_color="red", width=80, command=cancelar_entrada)
 cancelar_entrada.grid(row=4, column=1, padx=5, sticky="w")
 
-salvar_entrada = customtkinter.CTkButton(frame_entrada, text="Salvar", width=80)
+salvar_entrada = customtkinter.CTkButton(frame_entrada, text="Salvar", width=80, command=salvar_entrada)
 salvar_entrada.grid(row=4, column=2, padx=10, sticky="ne")
 
 
