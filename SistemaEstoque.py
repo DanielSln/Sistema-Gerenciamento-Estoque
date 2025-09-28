@@ -781,15 +781,135 @@ def entrada_relatorio():
     botao_saida_relatorio.configure(state='normal')
 
 
-def exportar_dados():
+def exportar_selecionados(relatorios, formatos):
     try:
         from tkinter import filedialog
         import openpyxl
         from reportlab.lib.pagesizes import letter
         from reportlab.pdfgen import canvas
-        from reportlab.lib.units import inch
+        from datetime import datetime
+        
+        # Escolher pasta para salvar
+        pasta = filedialog.askdirectory(title="Escolha onde salvar os arquivos")
+        if not pasta:
+            return
+            
+        conexao = sqlite3.connect("SistemaEstoque.db")
+        cursor = conexao.cursor()
+        data_atual = datetime.now().strftime("%d/%m/%Y %H:%M")
+        
+        for relatorio in relatorios:
+            for formato in formatos:
+                nome_arquivo = f"{relatorio}_{datetime.now().strftime('%Y%m%d_%H%M')}.{formato}"
+                caminho_completo = f"{pasta}/{nome_arquivo}"
+                
+                if formato == "xlsx":
+                    wb = openpyxl.Workbook()
+                    ws = wb.active
+                    ws.title = relatorio
+                    
+                    # Cabeçalho
+                    ws.append(["SISTEMA DE GERENCIAMENTO DE ESTOQUE"])
+                    ws.append([f"RELATÓRIO {relatorio.upper()}"])
+                    ws.append([f"Data: {data_atual}"])
+                    ws.append([""])
+                    
+                    if relatorio == "Estoque":
+                        ws.append(["Produto", "Quantidade", "Preço", "Descrição"])
+                        cursor.execute("SELECT nomeP, quantidadeP, precoP, descricaoP FROM produtos")
+                    elif relatorio == "Saída":
+                        ws.append(["Produto", "Quantidade", "Data/Hora"])
+                        cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+                    elif relatorio == "Entrada":
+                        ws.append(["Produto", "Quantidade", "Data/Hora"])
+                        cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+                    
+                    for row in cursor.fetchall():
+                        ws.append(row)
+                    
+                    wb.save(caminho_completo)
+                    
+                elif formato == "pdf":
+                    c = canvas.Canvas(caminho_completo, pagesize=letter)
+                    y = 750
+                    
+                    c.setFont("Helvetica-Bold", 16)
+                    c.drawString(50, y, "SISTEMA DE GERENCIAMENTO DE ESTOQUE")
+                    y -= 25
+                    c.setFont("Helvetica-Bold", 14)
+                    c.drawString(50, y, f"RELATÓRIO {relatorio.upper()}")
+                    y -= 20
+                    c.setFont("Helvetica", 10)
+                    c.drawString(50, y, f"Data: {data_atual}")
+                    y -= 40
+                    
+                    if relatorio == "Estoque":
+                        cursor.execute("SELECT nomeP, quantidadeP, precoP FROM produtos")
+                        for row in cursor.fetchall():
+                            c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - R$ {row[2]}")
+                            y -= 15
+                            if y < 100:
+                                c.showPage()
+                                y = 750
+                    elif relatorio == "Saída":
+                        cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+                        for row in cursor.fetchall():
+                            c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - {row[2]}")
+                            y -= 15
+                            if y < 100:
+                                c.showPage()
+                                y = 750
+                    elif relatorio == "Entrada":
+                        cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+                        for row in cursor.fetchall():
+                            c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - {row[2]}")
+                            y -= 15
+                            if y < 100:
+                                c.showPage()
+                                y = 750
+                    
+                    c.save()
+                    
+                elif formato == "docx":
+                    # Para Word, vamos criar um arquivo de texto simples
+                    with open(caminho_completo.replace('.docx', '.txt'), 'w', encoding='utf-8') as f:
+                        f.write("SISTEMA DE GERENCIAMENTO DE ESTOQUE\n")
+                        f.write(f"RELATÓRIO {relatorio.upper()}\n")
+                        f.write(f"Data: {data_atual}\n")
+                        f.write("="*50 + "\n\n")
+                        
+                        if relatorio == "Estoque":
+                            cursor.execute("SELECT nomeP, quantidadeP, precoP, descricaoP FROM produtos")
+                            for row in cursor.fetchall():
+                                f.write(f"{row[0]} - Qtd: {row[1]} - R$ {row[2]} - {row[3]}\n")
+                        elif relatorio == "Saída":
+                            cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+                            for row in cursor.fetchall():
+                                f.write(f"{row[0]} - Qtd: {row[1]} - {row[2]}\n")
+                        elif relatorio == "Entrada":
+                            cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+                            for row in cursor.fetchall():
+                                f.write(f"{row[0]} - Qtd: {row[1]} - {row[2]}\n")
+        
+        conexao.close()
+        messagebox.showinfo("Sucesso", f"Arquivos exportados com sucesso em:\n{pasta}")
+        
+    except Exception as e:
+        messagebox.showerror("Erro", f"Erro ao exportar: {str(e)}")
+
+def exportar_dados_antigo():
+    try:
+        from tkinter import filedialog
+        import openpyxl
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+        from datetime import datetime
+        
+        # Identificar qual relatório está ativo
+        tipo_relatorio = label_relatorio.cget("text")
         
         # Escolher onde salvar
+        nome_arquivo = tipo_relatorio.replace("Relatório ", "").replace(" ", "_")
         arquivo = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[("Excel files", "*.xlsx"), ("PDF files", "*.pdf")]
@@ -802,82 +922,164 @@ def exportar_dados():
         conexao = sqlite3.connect("SistemaEstoque.db")
         cursor = conexao.cursor()
         
+        # Cabeçalho padrão
+        data_atual = datetime.now().strftime("%d/%m/%Y %H:%M")
+        cabecalho = f"""SISTEMA DE GERENCIAMENTO DE ESTOQUE
+{tipo_relatorio.upper()}
+Data de Geração: {data_atual}
+{'='*50}"""
+        
         if arquivo.endswith('.xlsx'):
-            # Exportar para Excel
             wb = openpyxl.Workbook()
+            ws = wb.active
             
-            # Aba Estoque
-            ws_estoque = wb.active
-            ws_estoque.title = "Estoque"
-            ws_estoque.append(["Produto", "Quantidade", "Preço", "Descrição"])
-            cursor.execute("SELECT nomeP, quantidadeP, precoP, descricaoP FROM produtos")
-            for row in cursor.fetchall():
-                ws_estoque.append(row)
+            # Adicionar cabeçalho
+            ws.append(["SISTEMA DE GERENCIAMENTO DE ESTOQUE"])
+            ws.append([tipo_relatorio.upper()])
+            ws.append([f"Data de Geração: {data_atual}"])
+            ws.append([""])  # Linha vazia
             
-            # Aba Saídas
-            ws_saidas = wb.create_sheet("Saídas")
-            ws_saidas.append(["Produto", "Quantidade", "Data/Hora"])
-            cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
-            for row in cursor.fetchall():
-                ws_saidas.append(row)
+            if "Estoque" in tipo_relatorio:
+                ws.append(["Produto", "Quantidade", "Preço", "Descrição"])
+                cursor.execute("SELECT nomeP, quantidadeP, precoP, descricaoP FROM produtos")
+            elif "Saída" in tipo_relatorio:
+                ws.append(["Produto", "Quantidade", "Data/Hora"])
+                cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+            elif "Entrada" in tipo_relatorio:
+                ws.append(["Produto", "Quantidade", "Data/Hora"])
+                cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
             
-            # Aba Entradas
-            ws_entradas = wb.create_sheet("Entradas")
-            ws_entradas.append(["Produto", "Quantidade", "Data/Hora"])
-            cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
             for row in cursor.fetchall():
-                ws_entradas.append(row)
+                ws.append(row)
             
             wb.save(arquivo)
             
         elif arquivo.endswith('.pdf'):
-            # Exportar para PDF
             c = canvas.Canvas(arquivo, pagesize=letter)
             y = 750
             
-            # Título
+            # Cabeçalho
             c.setFont("Helvetica-Bold", 16)
-            c.drawString(50, y, "Relatório do Sistema de Estoque")
-            y -= 40
-            
-            # Estoque
+            c.drawString(50, y, "SISTEMA DE GERENCIAMENTO DE ESTOQUE")
+            y -= 25
             c.setFont("Helvetica-Bold", 14)
-            c.drawString(50, y, "ESTOQUE")
+            c.drawString(50, y, tipo_relatorio.upper())
             y -= 20
             c.setFont("Helvetica", 10)
-            cursor.execute("SELECT nomeP, quantidadeP, precoP FROM produtos")
-            for row in cursor.fetchall():
-                c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - R$ {row[2]}")
-                y -= 15
-                if y < 100:
-                    c.showPage()
-                    y = 750
+            c.drawString(50, y, f"Data de Geração: {data_atual}")
+            y -= 30
+            c.drawString(50, y, "="*50)
+            y -= 30
             
-            y -= 20
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(50, y, "SAÍDAS")
-            y -= 20
-            c.setFont("Helvetica", 10)
-            cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC LIMIT 20")
-            for row in cursor.fetchall():
-                c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - {row[2]}")
-                y -= 15
-                if y < 100:
-                    c.showPage()
-                    y = 750
+            if "Estoque" in tipo_relatorio:
+                cursor.execute("SELECT nomeP, quantidadeP, precoP FROM produtos")
+                for row in cursor.fetchall():
+                    c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - R$ {row[2]}")
+                    y -= 15
+                    if y < 100:
+                        c.showPage()
+                        y = 750
+            elif "Saída" in tipo_relatorio:
+                cursor.execute("SELECT produto, quantidade, data_hora FROM saidas ORDER BY id DESC")
+                for row in cursor.fetchall():
+                    c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - {row[2]}")
+                    y -= 15
+                    if y < 100:
+                        c.showPage()
+                        y = 750
+            elif "Entrada" in tipo_relatorio:
+                cursor.execute("SELECT produto, quantidade, data_hora FROM entradas ORDER BY id DESC")
+                for row in cursor.fetchall():
+                    c.drawString(50, y, f"{row[0]} - Qtd: {row[1]} - {row[2]}")
+                    y -= 15
+                    if y < 100:
+                        c.showPage()
+                        y = 750
             
             c.save()
         
         conexao.close()
-        messagebox.showinfo("Sucesso", "Relatório exportado com sucesso!")
+        messagebox.showinfo("Sucesso", f"{tipo_relatorio} exportado com sucesso!")
         
-    except ImportError:
-        messagebox.showerror("Erro", "Instale as dependências: pip install openpyxl reportlab")
+    except ImportError as e:
+        messagebox.showerror("Erro", f"Biblioteca não encontrada: {str(e)}\nInstale: pip install openpyxl reportlab")
     except Exception as e:
-        messagebox.showerror("Erro", f"Erro ao exportar: {str(e)}")
+        messagebox.showerror("Erro", f"Erro ao exportar: {str(e)}\nTipo: {type(e).__name__}")
+        print(f"Erro detalhado: {e}")  # Para debug
 
 def exportar_relatorio():
-    exportar_dados()
+    tela_export = customtkinter.CTkToplevel()
+    tela_export.geometry('570x300')
+    tela_export.title("Exportar Arquivos")
+    tela_export.attributes("-topmost", True)
+    tela_export.resizable(width=False, height=False)
+
+    # Frame após clicar no botão de exportar
+    frame_export = customtkinter.CTkFrame(tela_export, width=500, height=300)
+    frame_export.pack(pady=10, anchor='center')
+    frame_export.grid_propagate(False)
+
+    # label da tela
+    label_escolher_relatorio = customtkinter.CTkLabel(frame_export, text="Escolher Relatório(s)", font=("Arial", 20))
+    label_escolher_relatorio.grid(row=0, column=0, pady=30)
+
+    escolher_extensao = customtkinter.CTkLabel(frame_export, text="Escolher Extensão", font=("Arial", 20))
+    escolher_extensao.grid(row=0, column=1, padx=50, pady=10)
+
+    # CheckBox Tela Relatório
+    exportar_estoque = customtkinter.CTkCheckBox(frame_export, text="Exportar Estoque", font=("Arial", 15),
+                                                 corner_radius=15)
+    exportar_estoque.grid(row=1, column=0, sticky="w", pady=10, padx=50)
+
+    exportar_entrada = customtkinter.CTkCheckBox(frame_export, text="Exportar Entrada", font=("Arial", 15),
+                                                corner_radius=15)
+    exportar_entrada.grid(row=2, column=0, sticky="w", pady=10, padx=50)
+
+    exportar_saida = customtkinter.CTkCheckBox(frame_export, text="Exportar Saída", font=("Arial", 15),
+                                               corner_radius=15)
+    exportar_saida.grid(row=3, column=0, sticky="w", pady=10, padx=50)
+
+    # Extensões
+    word = customtkinter.CTkCheckBox(frame_export, text="WORD", font=("Arial", 15), corner_radius=15)
+    word.grid(row=1, column=1, sticky="w", pady=10, padx=50)
+
+    pdf = customtkinter.CTkCheckBox(frame_export, text="PDF", font=("Arial", 15), corner_radius=15)
+    pdf.grid(row=2, column=1, sticky="w", pady=10, padx=50)
+
+    excel = customtkinter.CTkCheckBox(frame_export, text="EXCEL", font=("Arial", 15), corner_radius=15)
+    excel.grid(row=3, column=1, sticky="w", padx=50, pady=10)
+
+    def processar_exportacao():
+        relatorios = []
+        formatos = []
+        
+        if exportar_estoque.get():
+            relatorios.append("Estoque")
+        if exportar_entrada.get():
+            relatorios.append("Entrada")
+        if exportar_saida.get():
+            relatorios.append("Saída")
+            
+        if excel.get():
+            formatos.append("xlsx")
+        if pdf.get():
+            formatos.append("pdf")
+        if word.get():
+            formatos.append("docx")
+            
+        if not relatorios or not formatos:
+            messagebox.showerror("Erro", "Selecione pelo menos um relatório e um formato!")
+            return
+            
+        exportar_selecionados(relatorios, formatos)
+        tela_export.destroy()
+
+    cancelar_export = customtkinter.CTkButton(frame_export, text="Cancelar", width=70, fg_color="red", 
+                                             command=tela_export.destroy)
+    cancelar_export.grid(row=4, column=0, pady=20, sticky="e")
+
+    salvar_export = customtkinter.CTkButton(frame_export, text="Salvar", width=70, command=processar_exportacao)
+    salvar_export.grid(row=4, column=1, sticky="w", padx=20)
 
 
 def sair():
